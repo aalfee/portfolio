@@ -1,198 +1,205 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-const Card = ({ children }) => (
-  <div className="border border-gray-700 rounded-xl p-4">{children}</div>
-);
 
-const CardContent = ({ children }) => (
-  <div>{children}</div>
-);
-
-const Button = ({ children }) => (
-  <button className="bg-white text-black px-4 py-2 rounded">
-    {children}
-  </button>
-);
+/* ---------------- CONFIG ---------------- */
 const GITHUB_USERNAME = "aalfee";
-const CACHE_KEY = "github_repos_cache_v1";
-const CACHE_TTL = 1000 * 60 * 10; // 10 minutes
+const CACHE_KEY = "github_cache_v2";
+const CACHE_TTL = 1000 * 60 * 10;
 
+/* ---------------- MAIN ---------------- */
 export default function Portfolio() {
   const [repos, setRepos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  const featuredRepos = useMemo(() => {
+  const featured = useMemo(() => {
     return repos
       .filter(r => !r.fork)
-      .slice(0, 6);
+      .sort((a, b) => b.stargazers_count - a.stargazers_count)
+      .slice(0, 4);
   }, [repos]);
 
+  /* ---------------- DATA ---------------- */
   useEffect(() => {
     const cached = localStorage.getItem(CACHE_KEY);
 
     if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (Date.now() - parsed.timestamp < CACHE_TTL) {
-          setRepos(parsed.data);
-          setLoading(false);
-          return;
-        }
-      } catch (e) {
-        localStorage.removeItem(CACHE_KEY);
+      const parsed = JSON.parse(cached);
+      if (Date.now() - parsed.timestamp < CACHE_TTL) {
+        setRepos(parsed.data);
+        setLoading(false);
+        return;
       }
     }
 
-    const controller = new AbortController();
-
-    async function fetchRepos() {
+    async function load() {
       try {
         setLoading(true);
 
         const res = await fetch(
-          `https://api.github.com/users/${GITHUB_USERNAME}/repos`,
-          { signal: controller.signal }
+          `https://api.github.com/users/${GITHUB_USERNAME}/repos`
         );
 
-        if (!res.ok) throw new Error("GitHub API error");
-
         const data = await res.json();
+        const cleaned = data.filter(r => !r.fork);
 
-        const sorted = data
-          .filter(repo => !repo.fork)
-          .sort((a, b) => b.stargazers_count - a.stargazers_count);
-
-        setRepos(sorted);
+        setRepos(cleaned);
 
         localStorage.setItem(
           CACHE_KEY,
-          JSON.stringify({ data: sorted, timestamp: Date.now() })
+          JSON.stringify({ data: cleaned, timestamp: Date.now() })
         );
-      } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error(err);
-          setError("Failed to load GitHub projects.");
-        }
       } finally {
         setLoading(false);
       }
     }
 
-    fetchRepos();
-
-    return () => controller.abort();
+    load();
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white px-6 md:px-20 py-10">
+    <div className="bg-black text-white">
 
-      {/* HERO */}
-      <section className="text-center py-20">
+      {/* ================= HERO (APPLE STYLE INTRO) ================= */}
+      <section className="h-screen flex flex-col justify-center items-center text-center px-6">
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-white/50 text-sm tracking-widest uppercase"
+        >
+          Software Engineer
+        </motion.p>
+
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-4xl md:text-6xl font-bold"
+          transition={{ duration: 0.8 }}
+          className="text-5xl md:text-7xl font-semibold mt-6 tracking-tight"
         >
           Alfiya Valitova
         </motion.h1>
 
-        <p className="text-gray-400 mt-4 text-lg">
-          Senior Software Developer / Lead Developer
+        <p className="text-white/50 mt-6 max-w-xl text-lg">
+          I build scalable systems, AI-driven tools, and modern web platforms.
         </p>
 
-        <div className="flex justify-center gap-6 mt-6 flex-wrap text-sm text-gray-300">
-          <div>📞 (347) 409-4267</div>
-          <div>✉️ alfiyavcareers@gmail.com</div>
-          <div>🐙 github.com/aalfee</div>
-        </div>
-
-        <Button className="mt-8">Download Resume</Button>
-      </section>
-
-      {/* ABOUT */}
-      <section className="max-w-4xl mx-auto py-10">
-        <h2 className="text-2xl font-semibold mb-4">About Me</h2>
-        <p className="text-gray-300 leading-relaxed">
-          Senior Software Developer specializing in full-stack systems, cloud architecture,
-          and AI-driven applications with experience across React, Node.js, Python, and AWS.
-        </p>
-      </section>
-
-      {/* EXPERIENCE */}
-      <section className="py-10">
-        <h2 className="text-2xl font-semibold mb-6 text-center">Experience</h2>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {[
-            ["Concorde Education", "Senior Software Developer", "Scalable education platforms using React, Node.js, AWS"],
-            ["Queens College", "Software Associate", "Java systems, debugging, and architecture support"],
-            ["Freelance", "Web Developer", "E-commerce systems with JS, PHP, MySQL"]
-          ].map(([title, role, desc]) => (
-            <Card key={title}>
-              <CardContent className="p-6">
-                <h3 className="font-bold">{title}</h3>
-                <p className="text-sm text-gray-400">{role}</p>
-                <p className="mt-3 text-gray-300 text-sm">{desc}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="mt-10 flex gap-6 text-sm text-white/40">
+          <span>React</span>
+          <span>Node</span>
+          <span>Python</span>
+          <span>AWS</span>
         </div>
       </section>
 
-      {/* PROJECTS */}
-      <section className="py-10">
-        <h2 className="text-2xl font-semibold text-center mb-6">
-          Featured GitHub Projects
+      {/* ================= PRODUCT STORY SECTION ================= */}
+      <section className="min-h-screen flex items-center px-6 md:px-20 border-t border-white/10">
+        <div className="max-w-4xl">
+
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-5xl font-semibold tracking-tight"
+          >
+            Engineering systems that scale.
+          </motion.h2>
+
+          <p className="mt-8 text-white/60 text-lg leading-relaxed">
+            From education platforms to AI-driven applications, I focus on
+            building systems that handle complexity while staying elegant,
+            maintainable, and fast.
+          </p>
+
+        </div>
+      </section>
+
+      {/* ================= EXPERIENCE (APPLE STYLE TIMELINE) ================= */}
+      <section className="min-h-screen px-6 md:px-20 py-32 border-t border-white/10">
+
+        <h2 className="text-4xl font-semibold mb-20">
+          Experience
         </h2>
 
-        {loading && (
-          <p className="text-center text-gray-400">Loading repositories...</p>
-        )}
+        <div className="space-y-16 max-w-3xl">
 
-        {error && (
-          <p className="text-center text-red-400">{error}</p>
-        )}
+          {[
+            ["Concorde Education", "Senior Software Developer"],
+            ["Queens College", "Software Engineer"],
+            ["Freelance", "Full Stack Developer"]
+          ].map(([company, role]) => (
+            <motion.div
+              key={company}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-xl font-medium">{company}</p>
+              <p className="text-white/50 mt-1">{role}</p>
+            </motion.div>
+          ))}
 
-        {!loading && !error && (
-          <div className="grid md:grid-cols-2 gap-6">
-            {featuredRepos.map(repo => (
-              <Card key={repo.id}>
-                <CardContent className="p-6">
-                  <h3 className="font-bold">{repo.name}</h3>
-                  <p className="text-sm text-gray-400">
-                    ⭐ {repo.stargazers_count} • {repo.language || "Various"}
-                  </p>
-                  <p className="mt-3 text-gray-300 text-sm">
-                    {repo.description || "No description provided."}
-                  </p>
-                  <a
-                    href={repo.html_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-400 text-sm mt-3 inline-block"
-                  >
-                    View →
-                  </a>
-                </CardContent>
-              </Card>
+        </div>
+      </section>
+
+      {/* ================= PROJECTS (APPLE GRID) ================= */}
+      <section className="min-h-screen px-6 md:px-20 py-32 border-t border-white/10">
+
+        <h2 className="text-4xl font-semibold mb-16">
+          Selected Work
+        </h2>
+
+        {loading ? (
+          <p className="text-white/40">Loading projects...</p>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-10">
+
+            {featured.map(repo => (
+              <motion.div
+                key={repo.id}
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 200 }}
+                className="p-8 rounded-2xl bg-white/[0.03] border border-white/10"
+              >
+                <p className="text-xl font-medium">{repo.name}</p>
+
+                <p className="text-white/50 text-sm mt-2">
+                  ⭐ {repo.stargazers_count} · {repo.language || "Code"}
+                </p>
+
+                <p className="text-white/60 mt-6 text-sm leading-relaxed">
+                  {repo.description || "No description available."}
+                </p>
+
+                <a
+                  href={repo.html_url}
+                  target="_blank"
+                  className="inline-block mt-6 text-sm text-white/80 hover:text-white"
+                >
+                  View Project →
+                </a>
+              </motion.div>
             ))}
+
           </div>
         )}
       </section>
 
-      {/* SKILLS */}
-      <section className="py-10 text-center">
-        <h2 className="text-2xl font-semibold mb-4">Technical Skills</h2>
-        <p className="text-gray-300">
-          React • Node.js • Python • Java • AWS • Docker • SQL • Microservices • AI Systems
-        </p>
-      </section>
+      {/* ================= FINAL CTA SECTION ================= */}
+      <section className="h-screen flex flex-col justify-center items-center text-center px-6 border-t border-white/10">
 
-      {/* FOOTER */}
-      <footer className="text-center text-gray-500 py-10">
-        © 2026 Alfiya Valitova — Production Portfolio
-      </footer>
+        <h2 className="text-5xl font-semibold">
+          Let’s build something great.
+        </h2>
+
+        <p className="text-white/50 mt-6 max-w-md">
+          Open to software engineering roles, AI systems, and full-stack architecture work.
+        </p>
+
+        <div className="mt-10 text-white/40 text-sm">
+          alfiyavcareers@gmail.com
+        </div>
+
+      </section>
 
     </div>
   );
