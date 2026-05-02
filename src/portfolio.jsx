@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+const Card = ({ children }) => (
+  <div className="border border-gray-700 rounded-xl p-4">{children}</div>
+);
 
+const CardContent = ({ children }) => (
+  <div>{children}</div>
+);
+
+const Button = ({ children }) => (
+  <button className="bg-white text-black px-4 py-2 rounded">
+    {children}
+  </button>
+);
 const GITHUB_USERNAME = "aalfee";
 const CACHE_KEY = "github_repos_cache_v1";
 const CACHE_TTL = 1000 * 60 * 10; // 10 minutes
